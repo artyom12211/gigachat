@@ -10,20 +10,28 @@ class TgbotService {
         console.log("Tgbot has been launched");
 
         this.bot.command('giga', async (ctx) => {
-            console.log('ctx: ', ctx.payload)
-            let userMessage = ctx.payload
-            let gigaAnswer = await gigachatModel.getMessage(userMessage)
-            ctx.reply(gigaAnswer.content)
+            let chatId = ctx.update.message.chat.id
+            let userId = ctx.update.message.from.id
+            // Launching gpt bot only in our chat or with admin private chat.
+            if (chatId == process.env.TG_CHAT_ID || userId == process.env.TG_ADMIN_ID) {
+                let userMessage = ctx.payload
+                let model = 'GigaChat:latest'
+                let gigaAnswer = await gigachatModel.getMessage(userMessage, model)
+                ctx.reply(gigaAnswer.content)
+            }
         })
-        // this.bot.hears('giga', (ctx) => ctx.reply('Hey there'))
+        this.bot.command('gpt', async (ctx) => {
+            let chatId = ctx.update.message.chat.id
+            let userId = ctx.update.message.from.id
+            // Launching gpt bot only in our chat or with admin private chat.
+            if (chatId == process.env.TG_CHAT_ID || userId == process.env.TG_ADMIN_ID) {
+                let userMessage = ctx.payload
+                let model = 'gpt-3.5-turbo'
+                let gigaAnswer = await gigachatModel.getMessage(userMessage, model)
+                ctx.reply(gigaAnswer.content)
+            }
+        })
     }
-
-    async sendDataToTg (text) {
-        await this.tgbotInit()
-        let result = await this.bot.telegram.sendMessage(process.env.TG_CHATID, body)
-        console.log("result sendDataToTg: ", result);
-    }
-
 }
 
 module.exports = new TgbotService();

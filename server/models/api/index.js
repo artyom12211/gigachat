@@ -1,32 +1,40 @@
 const GigaChat = require('gigachat-node').GigaChat;
+const OpenAI = require('openai');
 require('dotenv').config()
 
 class Gigachat {
-    client = ""
+    gigaChat = ""
+    openai = ""
     async createToken() {
-        console.log(process.env.GIGACHAT_CLIENT_SECRET)
-        const client = new GigaChat(process.env.GIGACHAT_CLIENT_SECRET, process.env.GIGACHAT_CLIENT_ID_BASE64);
-        await client.createToken();
-        this.client = client
-    }
-    async getModels() {
-        const response = await (this.client).allModels();
-        // const response = await this.client.model('GigaChat:latest');
-        return response
-    }
-    async getMessage(userMessage) {
-        const response = await this.client.completion({
-            "model":"GigaChat:latest",
-            "messages": [
-                {
-                    role:"user",
-                    content:userMessage
-                }
-            ]
+        // GIGA
+        const gigaChat = new GigaChat(process.env.GIGACHAT_CLIENT_ID_BASE64);
+        await gigaChat.createToken();
+        this.gigaChat = gigaChat
+        // OPENAI
+        const openai = new OpenAI({
+            baseURL: "https://api.vsegpt.ru/v1",
+            apiKey: process.env['VSTGPT_API_KEY'], // This is the default and can be omitted
         });
-        let gigaAnswer = response.choices[0].message
-        console.log("gigaAnswer: ", response.choices[0].message);
-        return gigaAnswer
+        this.openai = openai
+    }
+
+    async getMessage(userMessage, model) {
+        let chatCompletion
+        if (model == "GigaChat:latest") {
+            chatCompletion = await this.gigaChat.completion({
+                model:model,
+                messages: [{role:"user",content:userMessage}]
+            });
+        }
+        else if (model == "gpt-3.5-turbo") {
+            chatCompletion = await this.openai.chat.completions.create({
+                messages: [{ role: 'user', content: userMessage }],
+                model: 'gpt-3.5-turbo',
+            });
+        }
+        let assistantAnswer = chatCompletion.choices[0].message
+        console.log(`${model}: ${assistantAnswer}`);
+        return assistantAnswer
     }
 }
 
